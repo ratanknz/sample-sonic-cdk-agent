@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AirNZ Oscar Chatbot</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/system-prompt-editor.css" />
+    <script src="config.js"></script>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        margin: 0;
+        padding: 0;
+      }
+
+      .header {
+        background-color: #002244;
+        color: white;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .header img.logo {
+        height: 40px;
+      }
+
+      .header-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .timer-container {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: #fff;
+      }
+
+      #status {
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        background-color: #ff4d4f;
+        color: white;
+        font-weight: bold;
+      }
+
+      #status.connected {
+        background-color: #52c41a;
+      }
+
+      .button-container {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .button {
+        background-color: #1890ff;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .button:hover {
+        background-color: #40a9ff;
+      }
+
+      #chat-container {
+        padding: 2rem;
+        background-color: white;
+        border-top: 1px solid #ddd;
+        min-height: 300px;
+      }
+
+      #system-prompt-container {
+        background-color: #fff;
+        padding: 1rem 2rem;
+        border-top: 1px solid #ddd;
+      }
+
+      .system-prompt-textarea {
+        width: 100%;
+        height: 100px;
+        padding: 0.5rem;
+        font-family: monospace;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 1rem;
+        background-color: #f0f0f0;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="header">
+        <h1>
+          <img src="/assets/airnz-logo.png" alt="AirNZ Logo" class="logo" />
+          AirNZ Oscar Chatbot
+        </h1>
+        <div class="header-controls">
+          <div class="timer-container">
+            <div class="timer-icon">🕐</div>
+            <span id="timer">0:00</span>
+          </div>
+          <div id="status" class="disconnected">Disconnected</div>
+          <div class="button-container">
+            <button id="logout-button" class="button">Logout</button>
+            <button id="show-prompt-button" class="button">Show Prompt</button>
+            <button id="start" class="button">Start Session</button>
+            <button id="stop" class="button" disabled>Stop Session</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="system-prompt-container" style="display: none">
+        <h2>System Prompt Editor</h2>
+        <div id="save-confirmation" style="display: none">Saved!</div>
+        <div class="editor-container">
+          <textarea
+            id="system-prompt-textarea"
+            class="system-prompt-textarea"
+            placeholder="Enter system prompt here..."
+          ></textarea>
+          <div class="prompt-controls">
+            <button id="save-prompt-button" class="button">Save Prompt</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="chat-container">
+        <!-- Conversation messages will appear here -->
+      </div>
+
+      <div class="footer">
+        Voice Chat Interface v1.0 | Air New Zealand
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
