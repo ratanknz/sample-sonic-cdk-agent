@@ -466,7 +466,7 @@ async function updateTranscript(history) {
         const text = match[2];
 
         // Add emotion as a prefix
-        messageText = `Agent: ${text}`;
+        messageText = `[${emotion}]${text}`;
       }
     }
 
@@ -520,19 +520,10 @@ function createHtmlStructure() {
           </div>
           <div id="status" class="disconnected">Disconnected</div>
           <div class="button-container">
+            <button id="logout-button" class="button">Logout</button>
             <button id="show-prompt-button" class="button">Show Prompt</button>
-            <button id="start" class="button tooltip">
-              <i class="fas fa-phone"></i>
-              <span class="tooltiptext">Call</span>
-            </button>
-            <button id="stop" class="button tooltip" disabled>
-              <i class="fas fa-phone-slash"></i>
-              <span class="tooltiptext">Disconnect</span>
-            </button>
-            <button id="logout-button" class="button tooltip">
-              <i class="fas fa-sign-out-alt"></i>
-              <span class="tooltiptext">Logout</span>
-            </button>
+            <button id="start" class="button">Start Session</button>
+            <button id="stop" class="button" disabled>Stop Session</button>
           </div>
         </div>
       </div>

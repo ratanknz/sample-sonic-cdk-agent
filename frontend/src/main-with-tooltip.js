@@ -466,6 +466,7 @@ async function updateTranscript(history) {
         const text = match[2];
 
         // Add emotion as a prefix
+        // messageText = `[${emotion}]${text}`;
         messageText = `Agent: ${text}`;
       }
     }
@@ -505,22 +506,30 @@ function handleAudioReceived(audioData) {
 // Creates the HTML structure for the interface
 function createHtmlStructure() {
   document.body.innerHTML = `
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <div id="app">
-      <div class="header">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="airnz-logo.jpg" alt="AirNZ Logo" style="height: 100px;" />
-            <h1>Ask Oscar</h1>
-          </div>
 
-          <div class="header-controls">
+    <div id="app">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+      <div class="header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="airnz-logo.jpg" alt="AirNZ Logo" style="height: 100px;" />
+        <h1>Ask Oscar</h1>
+      </div>
+        <div class="header-controls">
           <div class="timer-container">
             <div class="timer-icon">🕐</div>
             <span id="timer">0:00</span>
           </div>
-          <div id="status" class="disconnected">Disconnected</div>
+          <!-- div id="status" class="disconnected">Disconnected</div -->
+          
           <div class="button-container">
-            <button id="show-prompt-button" class="button">Show Prompt</button>
+            <button id="show-prompt-button" class="button tooltip">
+              <i class="fas fa-comment-dots"></i>
+              <span class="tooltiptext">Show Prompt</span>
+            </button>          
+            <div id="status" class="disconnected tooltip">
+              <i class="fas fa-plug"></i>
+              <span class="tooltiptext">Disconnected</span>
+            </div>
             <button id="start" class="button tooltip">
               <i class="fas fa-phone"></i>
               <span class="tooltiptext">Call</span>
@@ -560,7 +569,7 @@ function createHtmlStructure() {
       </div>
       
       <div class="footer">
-        <div>AirNZ Oscar Voice Bot v1.0</div>
+        <div>AirNZ Voice Bot 2.0</div>
       </div>
     </div>
   `;
