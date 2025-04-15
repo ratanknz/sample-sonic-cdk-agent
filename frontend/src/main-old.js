@@ -466,8 +466,7 @@ async function updateTranscript(history) {
         const text = match[2];
 
         // Add emotion as a prefix
-        // messageText = `[${emotion}]${text}`;
-        messageText = `Agent: ${text}`;
+        messageText = `[${emotion}]${text}`;
       }
     }
 
@@ -508,10 +507,9 @@ function createHtmlStructure() {
   document.body.innerHTML = `
     <div id="app">
       <div class="header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-        <img src="airnz-logo.jpg" alt="AirNZ Logo" style="height: 100px;" />
-        <h1>AirNZ Voice Bot</h1>
-      </div>
+         <h1>
+          AirNZ Oscar Chatbot
+        </h1>
         <div class="header-controls">
           <div class="timer-container">
             <div class="timer-icon">🕐</div>
@@ -519,10 +517,10 @@ function createHtmlStructure() {
           </div>
           <div id="status" class="disconnected">Disconnected</div>
           <div class="button-container">
-            <!-- button id="show-prompt-button" class="button">Show Prompt</button -->
-            <button id="start" class="button">Call</button>
-            <button id="stop" class="button" disabled>Disconnect</button>
             <button id="logout-button" class="button">Logout</button>
+            <button id="show-prompt-button" class="button">Show Prompt</button>
+            <button id="start" class="button">Start Session</button>
+            <button id="stop" class="button" disabled>Stop Session</button>
           </div>
         </div>
       </div>
@@ -550,7 +548,7 @@ function createHtmlStructure() {
       </div>
       
       <div class="footer">
-        <div>AirNZ Voice Bot 2.0</div>
+        <div>AirNZ Oscar Voice Bot v1.0</div>
       </div>
     </div>
   `;
