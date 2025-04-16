@@ -295,6 +295,10 @@ class BedrockStreamManager:
                                     toolResult = await self.processToolUse(
                                         self.toolName, self.toolUseContent
                                     )
+                                    
+                                    # check if tool use resulted in an error that needs to be reported to Sonic
+                                    status = 'error' if toolResult.get('status') == 'error' else 'success'
+                                    logger.info(f"Tool result {toolResult} and value of status is {status}")
 
                                     # Create a unique content name for this tool result
                                     toolContent = str(uuid.uuid4())
@@ -336,6 +340,7 @@ class BedrockStreamManager:
                                                 "promptName": self.prompt_name,
                                                 "contentName": toolContent,
                                                 "content": content_json_string,
+                                                "status" : status
                                             }
                                         }
                                     }
@@ -365,6 +370,7 @@ class BedrockStreamManager:
                             await self.output_queue.put({"raw_data": response_data})
                 except StopAsyncIteration:
                     # Stream has ended
+                    logger.error(f'There was an error processing the request {json.dump(response_data)}')
                     break
                 except Exception as e:
                     # Handle ValidationException properly
