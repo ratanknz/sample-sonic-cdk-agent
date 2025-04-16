@@ -46,71 +46,32 @@ def get_dynamodb_table_name():
 def search_booking_record(search_type, search_value):
     """
     Search for booking records by either airpointsNumber or bookingReference
-
+    
     Parameters:
     search_type (str): Either 'airpoints' or 'booking'
     search_value (str): The value to search for
-
+    
     Returns:
-    list: List of matching booking records or return defaultResponse if none found
+    list: List of matching booking records
     """
-    logger.info(f"Inside retrieve_user_profile:search_booking_record: search_type: {search_type} and search_value: {search_value}")
-    search_value = str(search_value)
-    try:
-        table_name = get_dynamodb_table_name()
-        dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(table_name)
-
-        if search_type.lower() == 'airpoints':
-            # Search by airpointsNumber (partition key)
-            response = table.query(
-                KeyConditionExpression=Key('airpointsNumber').eq(search_value)
-            )
-            logger.info(f"Inside retrieve_user_profile:search_booking_record: search result returned: {json.dumps(response)}")
-            # return response
-        elif search_type.lower() == 'booking':
-            # Search by bookingReference using the GSI, reference numbers are stored in DB in uppercase.
-            search_value = search_value.upper()
-
-            response = table.query(
-                IndexName='bookingReference-index',
-                KeyConditionExpression=Key('bookingReference').eq(search_value)
-            )
-            logger.info(f"Inside retrieve_user_profile:search_booking_record: search result returned: {json.dumps(response)}")
-            # return response 
-        else:
-            raise ValueError("search_type must be either 'airpoints' or 'booking'")
-
-        if response['Count'] > 0:
-            return response
-        else:
-            logger.info(f"No booking records found for {search_type}: {search_value}")
-            return defaultResponse
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table = dynamodb.Table('voiceBot-BookingRecord')
     
-    except Exception as e:
-        logger.error(f"Error during user profile search: {e}")
-        return defaultResponse
+    if search_type.lower() == 'airpoints':
+        # Search by airpointsNumber (partition key)
+        response = table.query(
+            KeyConditionExpression=Key('airpointsNumber').eq(search_value)
+        )
+    elif search_type.lower() == 'booking':
+        # Search by bookingReference using the GSI
+        response = table.query(
+            IndexName='bookingReference-index',
+            KeyConditionExpression=Key('bookingReference').eq(search_value)
+        )
+    else:
+        raise ValueError("search_type must be either 'airpoints' or 'booking'")
     
-    # TODO: you must return a response for Sonic indicating there is some sort of catastrophic failure and we cannot serve the user at this time.
-    except (ProfileNotFound, NoCredentialsError) as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: AWS credential error: {str(e)}")
-        return defaultResponse
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        error_message = e.response["Error"]["Message"]
-        if error_code == "ResourceNotFoundException":
-            table_name = get_dynamodb_table_name()
-            logger.error(f"retrieve_user_profile.search_booking_record: Table {table_name} not found: {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB table not found: {error_message}")
-        elif error_code == "ProvisionedThroughputExceededException":
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
-            raise ConnectionError(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
-        else:
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB ClientError: {error_code} - {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB error: {error_message}")
-    except ConnectionError as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: Network error connecting to AWS: {str(e)}")
-        raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
+    return response.get('Items', [])
 
 def lookup_airpoints_number(airpoints_number: str):
     """
@@ -129,7 +90,8 @@ def lookup_airpoints_number(airpoints_number: str):
     try:
         table_name = get_dynamodb_table_name()
         dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(table_name)
+        # table = dynamodb.Table(table_name)
+        table = dynamodb.Table('voiceBot-BookingRecord')
 
         response = table.get_item(Key={"airpointsNumber": airpoints_number})
 
@@ -141,7 +103,9 @@ def lookup_airpoints_number(airpoints_number: str):
 
     except (ProfileNotFound, NoCredentialsError) as e:
         logger.error(f"AWS credential error: {str(e)}")
+        raise ValueError(f"AWS credential error: {str(e)}")
         return defaultResponse
+
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]

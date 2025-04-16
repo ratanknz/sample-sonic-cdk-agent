@@ -407,10 +407,24 @@ class BedrockStreamManager:
         elif tool == "userprofilesearch":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
                 # Parse the JSON string in the content field
-                airpoints_number_json = json.loads(toolUseContent.get("content"))
-                airpoints_number = airpoints_number_json.get("airpoints_number", "")
-                logger.info(f"Extracted airpoints number is {airpoints_number}")
-                results = retrieve_user_profile.main(airpoints_number)
+                # logger.info(f"nova_s2s_backed.processToolUse: Tool use content is {json.dumps(toolUseContent.get("content"))}")
+                # airpoints_number_json = json.loads(toolUseContent.get("content"))
+                # airpoints_number = airpoints_number_json.get("airpoints_number", "")
+                # logger.info(f"Extracted airpoints number is {airpoints_number}")
+                # results = retrieve_user_profile.main(airpoints_number)
+                # results = retrieve_user_profile.search_booking_record('booking', booking_ref)
+                
+                content = json.loads(toolUseContent['content'])
+                
+                # Determine the type and call the appropriate method
+                if 'booking_reference' in content:
+                    results = retrieve_user_profile.search_booking_record('booking', content['booking_reference'])
+                elif 'airpoints_number' in content:
+                    results = retrieve_user_profile.search_booking_record('airpoints', content['airpoints_number'])
+                else:
+                    print("Error: No valid key found in content.")
+
+
                 logger.info(f"retrieved profile information {json.dumps(results)}")
 
         return results
