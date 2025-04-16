@@ -28,7 +28,10 @@ logger = logging.getLogger(__name__)
 # Load environment variables from .env file
 load_dotenv()
 
-defaultErrorMessage = "Sorry we couldn't locate you in our records. Could you please check your details again?"
+defaultResponse = {"emailID": "", "airpointsNumber": "", "fullName": "", 
+                   "locationCountry": "", "status":"error", 
+                   "errorDescription":"Sorry we couldn't locate you in our records. Could you please check your details again?"
+                   }
 
 def get_dynamodb_table_name():
     """
@@ -55,7 +58,6 @@ def lookup_airpoints_number(airpoints_number: str):
     Raises:
         ValueError, ConnectionError, RuntimeError
     """
-    defaultResponse = {"emailID": "", "airpointsNumber": "", "fullName": "", "locationCountry": "", "status":"error", "errorDescription":"Sorry we couldn't locate you in our records. Could you please check your details again?"}
 
     try:
         table_name = get_dynamodb_table_name()
@@ -73,6 +75,8 @@ def lookup_airpoints_number(airpoints_number: str):
     except (ProfileNotFound, NoCredentialsError) as e:
         logger.error(f"AWS credential error: {str(e)}")
         raise ValueError(f"AWS credential error: {str(e)}")
+        return defaultResponse
+
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
@@ -88,15 +92,15 @@ def lookup_airpoints_number(airpoints_number: str):
         else:
             logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
             raise RuntimeError(f"DynamoDB error: {error_message}")
-
+        return defaultResponse
     except ConnectionError as e:
         logger.error(f"Network error connecting to AWS: {str(e)}")
         raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
-
+        return defaultResponse
     except Exception as e:
         logger.error(f"Unexpected error querying DynamoDB: {str(e)}")
         raise RuntimeError(f"Error querying DynamoDB: {str(e)}")
-
+        return defaultResponse
 
 def main(airpoints_number: str):
     """
@@ -112,14 +116,13 @@ def main(airpoints_number: str):
         logger.error("No Airpoints number provided")
         error = {"error": "No Airpoints number provided"}
         print(json.dumps(error, indent=2))
-        return defaultErrorMessage
-
+        return defaultResponse
     try:
         clean_number = str(airpoints_number).replace("-", "").strip()
 
         if not clean_number.isalnum():
             logger.debug("Invalid Airpoints number format.")
-            return defaultErrorMessage
+            return defaultResponse
 
         result = lookup_airpoints_number(clean_number)
 
@@ -143,6 +146,7 @@ def main(airpoints_number: str):
     except (ProfileNotFound, NoCredentialsError) as e:
         logger.error(f"AWS credential error: {str(e)}")
         raise ValueError(f"AWS credential error: {str(e)}")
+        return defaultResponse
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
@@ -157,20 +161,23 @@ def main(airpoints_number: str):
         else:
             logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
             raise RuntimeError(f"DynamoDB error: {error_message}")
+        return defaultResponse
 
     except ConnectionError as e:
         logger.error(f"Network error connecting to AWS: {str(e)}")
         raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
+        return defaultResponse
 
     except Exception as e:
         logger.error(f"Unexpected error querying DynamoDB: {str(e)}")
         raise RuntimeError(f"Error querying DynamoDB: {str(e)}")
+        return defaultResponse
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script.py <airpoints_number>")
-        sys.exit(1)
+        sys.exit(1)        
 
     airpoints_number = sys.argv[1]
     sys.exit(main(airpoints_number))
