@@ -4,6 +4,6 @@
 4. can i travel with my pet on a domestic flight to wellington
     - how much does it cost
 5. ask it to list all upcoming flights. ask it to confirm for seat number different flights. 
-    
+6. ask it find a flight by booking reference, then list details of the specific booking, then ask it to list all of your flight bookings.    
 
 

@@ -12,16 +12,14 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-
-import asyncio
-import websockets
 import json
-import warnings
-import uuid
-import os
 import logging
-import time
-
+import os
+import uuid
+import warnings
+import asyncio
+import requests
+import websockets
 
 # Import the Cognito validation module
 import cognito
@@ -53,6 +51,9 @@ logger = logging.getLogger(__name__)
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+# Suppress websockets server non-critical logs that are triggered by NLB health checks (empty TCP packets)
+logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
+
 
 
 class BedrockStreamManager:
@@ -84,9 +85,27 @@ class BedrockStreamManager:
 
     def _initialize_client(self):
 
-        self.last_credential_refresh = time.time()
+        """Initialize the Bedrock client with fresh credentials."""
+        # Fetch fresh credentials from ECS container metadata endpoint
+        try:
+            uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+            if uri:
+                logger.info("Fetching fresh AWS credentials for Bedrock client")
+                response = requests.get(f"http://169.254.170.2{uri}")
+                if response.status_code == 200:
+                    creds = response.json()
+                    os.environ["AWS_ACCESS_KEY_ID"] = creds["AccessKeyId"]
+                    os.environ["AWS_SECRET_ACCESS_KEY"] = creds["SecretAccessKey"]
+                    os.environ["AWS_SESSION_TOKEN"] = creds["Token"]
+                    logger.info("AWS credentials refreshed successfully")
+                else:
+                    logger.error(
+                        f"Failed to fetch fresh credentials: {response.status_code}"
+                    )
+        except Exception as e:
+            logger.error(f"Error refreshing credentials: {str(e)}")
 
-        """Initialize the Bedrock client."""
+        # Initialize the Bedrock client with the fresh credentials
         config = Config(
             endpoint_uri=f"https://bedrock-runtime.{self.region}.amazonaws.com",
             region=self.region,
@@ -97,11 +116,9 @@ class BedrockStreamManager:
         self.bedrock_client = BedrockRuntimeClient(config=config)
 
     def _ensure_fresh_client(self):
-        """Check if credentials need refresh and reinitialize client if needed."""
-        # Refresh client every 25 minutes to ensure fresh credentials
-        if time.time() - self.last_credential_refresh > 1500:  # 25 minutes in seconds
-            logger.info("Refreshing Bedrock client with new credentials")
-            self._initialize_client()
+        """Ensure client has fresh credentials by reinitializing."""
+        logger.info("Ensuring fresh credentials for Bedrock client")
+        self._initialize_client()
 
     async def initialize_stream(self):
 
@@ -296,10 +313,6 @@ class BedrockStreamManager:
                                         self.toolName, self.toolUseContent
                                     )
                                     
-                                    # check if tool use resulted in an error that needs to be reported to Sonic
-                                    status = 'error' if toolResult.get('status') == 'error' else 'success'
-                                    logger.info(f"Tool result {toolResult} and value of status is {status}")
-
                                     # Create a unique content name for this tool result
                                     toolContent = str(uuid.uuid4())
 
@@ -327,6 +340,10 @@ class BedrockStreamManager:
                                     await self.send_raw_event(
                                         json.dumps(tool_start_event)
                                     )
+
+                                    # check if tool use resulted in an error that needs to be reported to Sonic
+                                    status = 'error' if toolResult.get('status') == 'error' else 'success'
+                                    logger.info(f"Tool result {toolResult} and value of status is {status}")
 
                                     # Send tool result event
                                     if isinstance(toolResult, dict):
@@ -406,11 +423,15 @@ class BedrockStreamManager:
 
         elif tool == "userprofilesearch":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
-                # Parse the JSON string in the content field
-                airpoints_number_json = json.loads(toolUseContent.get("content"))
-                airpoints_number = airpoints_number_json.get("airpoints_number", "")
-                logger.info(f"Extracted airpoints number is {airpoints_number}")
-                results = retrieve_user_profile.main(airpoints_number)
+                content = json.loads(toolUseContent['content'])
+                # Determine the type and call the appropriate method
+                if 'booking_reference' in content:
+                    results = retrieve_user_profile.search_booking_record('booking', content['booking_reference'])
+                elif 'airpoints_number' in content:
+                    results = retrieve_user_profile.search_booking_record('airpoints', content['airpoints_number'])
+                else:
+                    print("Error: No valid key found in content.")
+
                 logger.info(f"retrieved profile information {json.dumps(results)}")
 
         return results
