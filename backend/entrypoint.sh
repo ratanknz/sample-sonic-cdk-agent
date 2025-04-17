@@ -32,14 +32,5 @@ refresh_credentials() {
 # Initial credential fetch
 refresh_credentials
 
-# Start credential refresh in background
-(
-  while true; do
-    # Sleep for 30 minutes (1800 seconds)
-    sleep 1800
-    refresh_credentials
-  done
-) &
-
 # Execute the main application
 exec "$@"

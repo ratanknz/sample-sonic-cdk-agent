@@ -21,16 +21,17 @@ import os
 import sys
 from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Configure logging
 logger = logging.getLogger(__name__)
 # Load environment variables from .env file
 load_dotenv()
 
-defaultResponse = {"emailID": "", "airpointsNumber": "", "fullName": "", 
-                   "locationCountry": "", "status":"error", 
-                   "errorDescription":"Sorry we couldn't locate you in our records. Could you please check your details again?"
-                   }
+defaultResponse = {
+    "status": "error",
+    "response": "Sorry we couldn't locate you in our records with {search_type}# {search_value}. Could you please check your details again?"
+}
 
 def get_dynamodb_table_name():
     """
@@ -54,13 +55,23 @@ def search_booking_record(search_type, search_value):
     Returns:
     list: List of matching booking records or return defaultResponse if none found
     """
-    logger.info(f"Inside retrieve_user_profile:search_booking_record: search_type: {search_type} and search_value: {search_value}")
+    
     search_value = str(search_value)
+    
+    # Remove any space, - or dot in search value
+    search_value = search_value.replace(" ", "").replace("-", "").replace(".", "")
+    logger.info(f"Inside retrieve_user_profile:search_booking_record: search_type: {search_type} and search_value: {search_value}")
+    
+    if search_value.isdigit():
+        search_type = "airpoints"
+    else:
+        search_type = "booking"
+
     try:
         table_name = get_dynamodb_table_name()
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(table_name)
-
+        
         if search_type.lower() == 'airpoints':
             # Search by airpointsNumber (partition key)
             response = table.query(
@@ -79,12 +90,37 @@ def search_booking_record(search_type, search_value):
             logger.info(f"Inside retrieve_user_profile:search_booking_record: search result returned: {json.dumps(response)}")
             # return response 
         else:
-            raise ValueError("search_type must be either 'airpoints' or 'booking'")
+            raise ValueError("search_type must be either 'airpoints' or 'booking reference'")
 
         if response['Count'] > 0:
-            return response
+            # Step 2: Get current datetime
+            now = datetime.now()
+            # return response 
+            # Step 3: Filter and sort
+            # Assumes 'departureDate' is 'YYYY-MM-DD' and 'departureTime' is 'HH:MM' (24-hour)
+            upcoming_flights = []
+
+            for item in response['Items']:
+                dep_datetime_str = f"{item['departureDate']} {item['departureTime']}"
+                dep_datetime = datetime.strptime(dep_datetime_str, "%Y-%m-%d %H:%M")
+                
+                if dep_datetime > now:
+                    upcoming_flights.append(item)
+
+            # Step 4: Sort upcoming flights
+            sorted_flights = sorted(
+                upcoming_flights,
+                key=lambda x: (x['departureDate'], x['departureTime'])
+            )
+            lookupResult = {"status": "success", "response": sorted_flights}
+            logger.info(f"retrieved user profile: {json.dumps(lookupResult)}")
+            return lookupResult
         else:
             logger.info(f"No booking records found for {search_type}: {search_value}")
+            defaultResponse["response"] = defaultResponse["response"].format(
+                search_type=search_type,
+                search_value=search_value
+            )            
             return defaultResponse
     
     except Exception as e:

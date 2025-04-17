@@ -351,7 +351,7 @@ export class WebSocketEventManager {
                         },
                         booking_reference: {
                           type: "string",
-                          description: "the user's flight booking reference in format ZBCYHG",
+                          description: "the user's flight booking reference in format ZBCYG",
                         },
                       },
                       required: ["airpoints_number"],
