@@ -63,7 +63,7 @@ The versions below are tested and validated. Minor version differences would lik
 
 1. Update the environment variables to point to your Amazon Dynamodb table and your Bedrock Knowledge Base
 
-Copy `template.env` to a new file `.env` and update the `KNOWLEDGE_BASE_ID` and `DYNAMODB_TABLE_NAME` to your knowledge base ID and your table name. For table structure, the tool expects `phone_number` (S) as the primary key (assuming telecom call center use case) and you can add any other keys you want. (e.g., "plan", "current_bill", etc.) Ask about those attributes in the chat to find a good
+Copy `template.env` to a new file `.env` and update the `KNOWLEDGE_BASE_ID`, `DYNAMODB_TABLE_NAME` to your knowledge base ID and your table name. For table structure, the tool expects `airpoint_number` (String) as the primary key (assuming airline use case) and booking_reference (String) as Sort Key and you can add any other fields you want. (e.g., "departureDate", "departureAirport", "flightNumber"). Also, add a GSI to your dynamodb table with booking_reference as primary key and airpoints_number as sort key. IMPORTANT: User profile lookup expects GSI name to be tablename-index (so if you table name is bookingData, then index name must be bookingData-index)
 
 If you want to bring your own VPC rather than the solution deploying a new VPC for you, specify your VPC ID in `VPC_ID`.
 

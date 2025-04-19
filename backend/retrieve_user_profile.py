@@ -1,284 +1,170 @@
-#
-# Copyright 2025 Amazon.com, Inc. and its affiliates. All Rights Reserved.
-#
-# Licensed under the Amazon Software License (the "License").
-# You may not use this file except in compliance with the License.
-# A copy of the License is located at
-#
-#   http://aws.amazon.com/asl/
-#
-# or in the "license" file accompanying this file. This file is distributed
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-# express or implied. See the License for the specific language governing
-# permissions and limitations under the License.
-#
+import os
+import sys
+import json
+import logging
+from datetime import datetime
 
 import boto3
 from boto3.dynamodb.conditions import Key
-import json
-import logging
-import os
-import sys
 from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
 from dotenv import load_dotenv
-from datetime import datetime
 
 # Configure logging
 logger = logging.getLogger(__name__)
-# Load environment variables from .env file
+logger.setLevel(logging.INFO)
+
+# Load environment variables
 load_dotenv()
 
+# Default responses
 defaultResponse = {
     "status": "error",
     "response": "Sorry we couldn't locate you in our records with {search_type}# {search_value}. Could you please check your details again?"
 }
 
-def get_dynamodb_table_name():
-    """
-    Loads and returns the DynamoDB table name from the .env file.
-    """
-    table_name = os.getenv("DYNAMODB_TABLE_NAME")
+systemError = {
+    "status": "error",
+    "response": "We are currently unable to retrieve your booking. Please try again later."
+}
 
+
+def get_dynamodb_table_name():
+    """Loads and returns the DynamoDB table name from the .env file."""
+    table_name = os.getenv("DYNAMODB_TABLE_NAME")
     if not table_name:
         raise ValueError("DYNAMODB_TABLE_NAME not found in .env file")
-
     return table_name
+
 
 def search_booking_record(search_type, search_value):
     """
-    Search for booking records by either airpointsNumber or bookingReference
+    Search for booking records by either airpointsNumber or bookingReference.
 
-    Parameters:
-    search_type (str): Either 'airpoints' or 'booking'
-    search_value (str): The value to search for
+    Args:
+        search_type (str): 'airpoints' or 'booking'
+        search_value (str): Search value
 
     Returns:
-    list: List of matching booking records or return defaultResponse if none found
+        dict: Lookup result or error response
     """
-    
-    search_value = str(search_value)
-    
-    # Remove any space, - or dot in search value
-    search_value = search_value.replace(" ", "").replace("-", "").replace(".", "")
-    logger.info(f"Inside retrieve_user_profile:search_booking_record: search_type: {search_type} and search_value: {search_value}")
-    
-    if search_value.isdigit():
-        search_type = "airpoints"
-    else:
-        search_type = "booking"
+    table_name = get_dynamodb_table_name()
+    index_name = f"{table_name}-index"
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+
+    search_value = str(search_value).replace(" ", "").replace("-", "").replace(".", "")
+    logger.info(f"search_booking_record: search_type={search_type}, search_value={search_value}")
 
     try:
-        table_name = get_dynamodb_table_name()
-        dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(table_name)
-        
         if search_type.lower() == 'airpoints':
-            # Search by airpointsNumber (partition key)
             response = table.query(
                 KeyConditionExpression=Key('airpointsNumber').eq(search_value)
             )
-            logger.info(f"Inside retrieve_user_profile:search_booking_record: search result returned: {json.dumps(response)}")
-            # return response
         elif search_type.lower() == 'booking':
-            # Search by bookingReference using the GSI, reference numbers are stored in DB in uppercase.
-            search_value = search_value.upper()
-
             response = table.query(
-                IndexName='bookingReference-index',
-                KeyConditionExpression=Key('bookingReference').eq(search_value)
+                IndexName=index_name,
+                KeyConditionExpression=Key('bookingReference').eq(search_value.upper())
             )
-            logger.info(f"Inside retrieve_user_profile:search_booking_record: search result returned: {json.dumps(response)}")
-            # return response 
         else:
-            raise ValueError("search_type must be either 'airpoints' or 'booking reference'")
+            raise ValueError("search_type must be either 'airpoints' or 'booking'")
+
+        logger.info(f"Query result: {json.dumps(response)}")
 
         if response['Count'] > 0:
-            # Step 2: Get current datetime
             now = datetime.now()
-            # return response 
-            # Step 3: Filter and sort
-            # Assumes 'departureDate' is 'YYYY-MM-DD' and 'departureTime' is 'HH:MM' (24-hour)
             upcoming_flights = []
 
             for item in response['Items']:
-                dep_datetime_str = f"{item['departureDate']} {item['departureTime']}"
-                dep_datetime = datetime.strptime(dep_datetime_str, "%Y-%m-%d %H:%M")
-                
+                dep_str = f"{item['departureDate']} {item['departureTime']}"
+                dep_datetime = datetime.strptime(dep_str, "%Y-%m-%d %H:%M")
+
                 if dep_datetime > now:
                     upcoming_flights.append(item)
 
-            # Step 4: Sort upcoming flights
             sorted_flights = sorted(
                 upcoming_flights,
                 key=lambda x: (x['departureDate'], x['departureTime'])
             )
-            lookupResult = {"status": "success", "response": sorted_flights}
-            logger.info(f"retrieved user profile: {json.dumps(lookupResult)}")
-            return lookupResult
-        else:
-            logger.info(f"No booking records found for {search_type}: {search_value}")
-            defaultResponse["response"] = defaultResponse["response"].format(
-                search_type=search_type,
-                search_value=search_value
-            )            
-            return defaultResponse
-    
-    except Exception as e:
-        logger.error(f"Error during user profile search: {e}")
-        return defaultResponse
-    
-    # TODO: you must return a response for Sonic indicating there is some sort of catastrophic failure and we cannot serve the user at this time.
-    except (ProfileNotFound, NoCredentialsError) as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: AWS credential error: {str(e)}")
-        return defaultResponse
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        error_message = e.response["Error"]["Message"]
-        if error_code == "ResourceNotFoundException":
-            table_name = get_dynamodb_table_name()
-            logger.error(f"retrieve_user_profile.search_booking_record: Table {table_name} not found: {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB table not found: {error_message}")
-        elif error_code == "ProvisionedThroughputExceededException":
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
-            raise ConnectionError(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
-        else:
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB ClientError: {error_code} - {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB error: {error_message}")
-    except ConnectionError as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: Network error connecting to AWS: {str(e)}")
-        raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
 
-def lookup_airpoints_number(airpoints_number: str):
-    """
-    Looks up an airpoints number in DynamoDB where it's the primary key.
+            result = {"status": "success", "response": sorted_flights}
+            logger.info(f"Upcoming flights found: {json.dumps(result)}")
+            return result
 
-    Args:
-        airpoints_number (str): The Airpoints number to look up
-
-    Returns:
-        dict: The item found in DynamoDB
-
-    Raises:
-        ValueError, ConnectionError, RuntimeError
-    """
-
-    try:
-        table_name = get_dynamodb_table_name()
-        dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(table_name)
-
-        response = table.get_item(Key={"airpointsNumber": airpoints_number})
-
-        if "Item" in response:
-            return response["Item"]
-        else:
-            logger.info(f"No DDB entry found for Airpoints number {airpoints_number}")
-            return defaultResponse
+        logger.info(f"No booking records found for {search_type}: {search_value}")
+        response_obj = defaultResponse.copy()
+        response_obj["response"] = response_obj["response"].format(
+            search_type=search_type,
+            search_value=search_value
+        )
+        return response_obj
 
     except (ProfileNotFound, NoCredentialsError) as e:
         logger.error(f"AWS credential error: {str(e)}")
-        return defaultResponse
+        return systemError
 
     except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        error_message = e.response["Error"]["Message"]
+        code = e.response["Error"]["Code"]
+        msg = e.response["Error"]["Message"]
+        logger.error(f"DynamoDB ClientError: {code} - {msg}")
+        return systemError
 
-        if error_code == "ResourceNotFoundException":
-            table_name = get_dynamodb_table_name()
-            logger.error(f"Table {table_name} not found: {error_message}")
-            raise RuntimeError(f"DynamoDB table not found: {error_message}")
-        elif error_code == "ProvisionedThroughputExceededException":
-            logger.warning(f"DynamoDB throughput exceeded: {error_message}")
-            raise ConnectionError(f"DynamoDB throughput exceeded: {error_message}")
-        else:
-            logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
-            raise RuntimeError(f"DynamoDB error: {error_message}")
-        return defaultResponse
     except ConnectionError as e:
-        logger.error(f"Network error connecting to AWS: {str(e)}")
-        raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
-        return defaultResponse
-    except Exception as e:
-        logger.error(f"Unexpected error querying DynamoDB: {str(e)}")
-        raise RuntimeError(f"Error querying DynamoDB: {str(e)}")
-        return defaultResponse
+        logger.error(f"Network error: {str(e)}")
+        return systemError
 
-def main(airpoints_number: str):
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        return systemError
+
+
+def main(search_type: str, search_value: str):
     """
-    Main function to process Airpoints number lookup requests.
+    Main function to process lookup requests.
 
     Args:
-        airpoints_number (str): The Airpoints number to look up
+        search_type (str): 'airpoints' or 'booking'
+        search_value (str): ID value to search
 
     Returns:
-        dict or int: Lookup result if successful, or error description
+        dict: Lookup result or error response
     """
-    if not airpoints_number:
-        logger.error("No Airpoints number provided")
-        error = {"error": "No Airpoints number provided"}
-        print(json.dumps(error, indent=2))
+    if not search_type or not search_value:
+        logger.error("Missing search_type or search_value")
+        print(json.dumps({"error": "Missing search_type or search_value"}, indent=2))
         return defaultResponse
-    try:
-        clean_number = str(airpoints_number).replace("-", "").strip()
 
-        if not clean_number.isalnum():
-            logger.debug("Invalid Airpoints number format.")
+    try:
+        clean_value = str(search_value).replace("-", "").strip()
+
+        if not clean_value.isalnum():
+            logger.debug("Invalid input format.")
             return defaultResponse
 
-        result = lookup_airpoints_number(clean_number)
+        result = search_booking_record(search_type, clean_value)
 
-        if result:
-            output = {
-                "airpointsNumber": airpoints_number,
-                "clean_number": clean_number,
-                "found": True,
-                "data": result,
-            }
-        else:
-            output = {
-                "airpointsNumber": airpoints_number,
-                "clean_number": clean_number,
-                "found": False,
-            }
+        output = {
+            "search_type": search_type,
+            "search_value": search_value,
+            "clean_value": clean_value,
+            "found": bool(result and result.get("status") == "success"),
+            "data": result
+        }
 
         print(json.dumps(output, indent=2))
         return result
 
-    except (ProfileNotFound, NoCredentialsError) as e:
-        logger.error(f"AWS credential error: {str(e)}")
-        raise ValueError(f"AWS credential error: {str(e)}")
-        return defaultResponse
-
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        error_message = e.response["Error"]["Message"]
-
-        if error_code == "ResourceNotFoundException":
-            logger.error(f"Table {table_name} not found: {error_message}")
-            raise RuntimeError(f"DynamoDB table not found: {error_message}")
-        elif error_code == "ProvisionedThroughputExceededException":
-            logger.warning(f"DynamoDB throughput exceeded: {error_message}")
-            raise ConnectionError(f"DynamoDB throughput exceeded: {error_message}")
-        else:
-            logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
-            raise RuntimeError(f"DynamoDB error: {error_message}")
-        return defaultResponse
-
-    except ConnectionError as e:
-        logger.error(f"Network error connecting to AWS: {str(e)}")
-        raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
-        return defaultResponse
-
     except Exception as e:
-        logger.error(f"Unexpected error querying DynamoDB: {str(e)}")
+        logger.error(f"Unexpected error: {str(e)}")
         raise RuntimeError(f"Error querying DynamoDB: {str(e)}")
-        return defaultResponse
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <airpoints_number>")
-        sys.exit(1)        
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <search_type: booking|airpoints> <search_value>")
+        sys.exit(1)
 
-    airpoints_number = sys.argv[1]
-    sys.exit(main(airpoints_number))
+    search_type_arg = sys.argv[1]
+    search_value_arg = sys.argv[2]
+
+    result = main(search_type_arg, search_value_arg)
+    sys.exit(0 if result and result.get("status") == "success" else 1)
