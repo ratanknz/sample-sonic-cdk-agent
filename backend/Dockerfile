@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && apt-get install -y jq curl 
 
 # Copy the Python files and .env
-COPY nova_s2s_backend.py knowledge_base_lookup.py retrieve_user_profile.py cognito.py entrypoint.sh .env ./
+COPY nova_s2s_backend.py knowledge_base_lookup.py retrieve_user_profile.py in_flight_services.py cognito.py entrypoint.sh .env ./
 
 # Expose the WebSocket port
 EXPOSE 80
