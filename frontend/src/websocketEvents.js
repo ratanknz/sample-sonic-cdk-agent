@@ -338,8 +338,7 @@ export class WebSocketEventManager {
               {
                 toolSpec: {
                   name: "userProfileSearch",
-                  description:
-                    "Search for a user's account and flight information by airpoints number or booking reference",
+                  description: "Retrieves a user's profile, including account and flight details, using either their Airpoints number or booking reference.",
                   inputSchema: {
                     json: JSON.stringify({
                       $schema: "http://json-schema.org/draft-07/schema#",
