@@ -5,3 +5,4 @@ backend/__pycache__/
 backend/.env
 frontend/dist/
 venv
+frontend/public/system_prompt.txt
