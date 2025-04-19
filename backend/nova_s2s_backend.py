@@ -304,7 +304,7 @@ class BedrockStreamManager:
                                     == "TOOL"
                                 ):
                                     logger.info(
-                                        "Processing tool use and sending result"
+                                        f"Processing tool use {self.toolName} and sending result"
                                     )
 
                                     # Process the tool use
@@ -406,7 +406,7 @@ class BedrockStreamManager:
         """Return the tool result"""
         tool = toolName.lower()
         results = {}
-
+        logger.info(f"In process tool use: tool name is {toolName} and toolUseContent is set to {json.dumps(toolUseContent)}")
         if tool == "lookup":
             # Extract query from toolUseContent
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
@@ -432,7 +432,7 @@ class BedrockStreamManager:
 
                 logger.info(f"retrieved profile information {json.dumps(results)}")
 
-        elif tool == "request-for-meal":
+        elif tool == "requestforspecialmeal":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
                 content = json.loads(toolUseContent['content'])
                 # Determine the type and call the appropriate method

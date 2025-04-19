@@ -361,9 +361,9 @@ export class WebSocketEventManager {
               },
               {
                 toolSpec: {
-                  name: "request-for-meal",
+                  name: "requestForSpecialMeal",
                   description:
-                    "Search for flight by booking reference and book special meal",
+                    "Use this tool to take a request for special meal on a flight for a user",
                   inputSchema: {
                     json: JSON.stringify({
                       $schema: "http://json-schema.org/draft-07/schema#",
