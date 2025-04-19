@@ -51,10 +51,13 @@ def get_dynamodb_table_name():
         raise ValueError("DYNAMODB_TABLE_NAME not found in .env file")
     return table_name
 
+from datetime import datetime, timedelta, timezone
+
+from datetime import datetime, timedelta, timezone
 
 def submit_request(booking_reference: str, meal_type: str):
     """
-    Books inflight services like meals or assistance.
+    Books inflight services like meals or assistance, only if the departure time is more than 24 hours away.
 
     Args:
         booking_reference (str): Booking reference number.
@@ -77,7 +80,7 @@ def submit_request(booking_reference: str, meal_type: str):
         # Query using the bookingReference GSI
         response = table.query(
             IndexName=index_name,
-            KeyConditionExpression=Key('bookingReference').eq(booking_reference)
+            KeyConditionExpression=Key('bookingReference').eq(booking_reference.upper())
         )
 
         items = response.get('Items', [])
@@ -85,11 +88,39 @@ def submit_request(booking_reference: str, meal_type: str):
         if not items:
             logger.info(f"No booking records found for booking reference number {booking_reference}")
             response_obj = defaultResponse.copy()
-            response_obj["response"] = response_obj["response"].format(
-                search_value=booking_reference
-            )
+            response_obj["response"] = response_obj["response"].format(search_value=booking_reference)
+            return response_obj
 
         for item in items:
+            departure_date_str = item.get('departureDate')
+            departure_time_str = item.get('departureTime')
+
+            if not departure_date_str or not departure_time_str:
+                logger.warning(f"Departure date/time missing for booking {booking_reference}")
+                return {
+                    "status": "error",
+                    "response": "Departure date/time not available for this booking."
+                }
+
+            try:
+                combined_datetime_str = f"{departure_date_str} {departure_time_str}"
+                departure_time = datetime.strptime(combined_datetime_str, "%Y-%m-%d %H:%M")
+                departure_time = departure_time.replace(tzinfo=timezone.utc)
+            except ValueError:
+                logger.error(f"Invalid departure date/time format: {combined_datetime_str}")
+                return {
+                    "status": "error",
+                    "response": "Invalid departure time format. Please contact support."
+                }
+
+            current_time = datetime.now(timezone.utc)
+            if departure_time - current_time < timedelta(hours=24):
+                logger.info(f"Meal request rejected for {booking_reference}: Less than 24 hours to departure")
+                return {
+                    "status": "error",
+                    "response": "Meal requests must be made at least 24 hours before departure. Please contact support."
+                }
+
             pk = item.get('airpointsNumber')
             sk = item.get('bookingReference')
 
@@ -114,16 +145,7 @@ def submit_request(booking_reference: str, meal_type: str):
         error_code = e.response["Error"]["Code"]
         error_message = e.response["Error"]["Message"]
         logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
-
-        if error_code == "ResourceNotFoundException":
-            logger.error(f"DynamoDB table not found: {error_message}")
-            return systemError
-        elif error_code == "ProvisionedThroughputExceededException":
-            logger.error(f"DynamoDB throughput exceeded: {error_message}")
-            return systemError
-        else:
-            logger.error(f"DynamoDB error: {error_message}")
-            return systemError
+        return systemError
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
@@ -147,6 +169,7 @@ def main(booking_reference: str, meal_type: str):
     return result
 
 
+# you can test this code by running python in_flight_services.py <booking_ref> <meal_type>
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python script.py <booking_reference> <meal_type>")

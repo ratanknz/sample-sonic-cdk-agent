@@ -157,7 +157,7 @@ def main(search_type: str, search_value: str):
         logger.error(f"Unexpected error: {str(e)}")
         raise RuntimeError(f"Error querying DynamoDB: {str(e)}")
 
-
+# you can test this code by running python retrieve_user_profile.py <booking|airpoints> <12345678|IRDMS>
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python script.py <search_type: booking|airpoints> <search_value>")
