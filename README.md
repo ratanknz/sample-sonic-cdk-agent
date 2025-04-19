@@ -124,7 +124,7 @@ aws cognito-idp admin-create-user \
 
 ### Prompting
 
-You can change the system prompt from the UI.
+You can change the system prompt from the UI which will be lost after the session. If you want to update the default prompt change the file config/system_prompts.txt and redeploy the stack by running ./deploy.sh. 
 
 ![](./diagrams/ui_screenshot.png)
 
