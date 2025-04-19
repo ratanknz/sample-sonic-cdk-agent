@@ -19,138 +19,141 @@ import json
 import logging
 import os
 import sys
-from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
-from dotenv import load_dotenv
 from datetime import datetime
+from dotenv import load_dotenv
+from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
 
 # Configure logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 # Load environment variables from .env file
 load_dotenv()
 
 defaultResponse = {
     "status": "error",
-    "response": "Sorry we are unable to fulfill your request at this moment. Please try via manage bookings or contact our customer support."
-} 
+    "response": "Sorry we couldn't locate you in our records with booking reference {search_value}. Could you please check your details again?"
+}
+
+systemError = {
+    "status": "error",
+    "response": "We are currently unable to retrieve your booking. Please try again later."
+}
 
 def get_dynamodb_table_name():
     """
-    Loads and returns the DynamoDB table name from the .env file.
+    Loads and returns the DynamoDB table name from environment variables.
+    Raises:
+        ValueError: If the table name is not set.
     """
     table_name = os.getenv("DYNAMODB_TABLE_NAME")
-
     if not table_name:
         raise ValueError("DYNAMODB_TABLE_NAME not found in .env file")
-
     return table_name
 
-def submit_request(booking_reference, mealType):
-    """
-    Book inflight services like meal, assistance and others 
 
-    Parameters:
-    booking_reference (str): booking reference number
-    mealType (str): requested special meal type
-    Returns:
-        Updated flight details with inflight services added to it.
+def submit_request(booking_reference: str, meal_type: str):
     """
+    Books inflight services like meals or assistance.
+
+    Args:
+        booking_reference (str): Booking reference number.
+        meal_type (str): Requested special meal type.
+
+    Returns:
+        dict: Updated booking information or error response.
+    """
+    meal_type = str(meal_type)
+    booking_reference = str(booking_reference).replace(" ", "").replace("-", "").replace(".", "")
     
-    mealType = str(mealType)
-    
-    # Remove any space, - or dot in search value
-    booking_reference = str(booking_reference)
-    booking_reference = booking_reference.replace(" ", "").replace("-", "").replace(".", "")
-    logger.info(f"Inside in_flight_services:submit_request: booking ref: {booking_reference} and meal type: {mealType}")
-    
+    logger.info(f"Processing request - Booking Ref: {booking_reference}, Meal Type: {meal_type}")
+
     try:
         table_name = get_dynamodb_table_name()
+        index_name = f"{table_name}-index"
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(table_name)
 
-        # Query GSI where bookingReference matches
+        # Query using the bookingReference GSI
         response = table.query(
-            IndexName='bookingReference-index',
+            IndexName=index_name,
             KeyConditionExpression=Key('bookingReference').eq(booking_reference)
         )
 
         items = response.get('Items', [])
 
         if not items:
-        # return an error so Sonic can allow user to retry with correct reference number    
-            defaultResponse = {
-                "status": "error",
-                "response": "We couldn't locate your booking by booking reference number {bookingReference}. Could you please double check?"
-            } 
-            defaultResponse["response"] = defaultResponse["response"].format(
-                bookingReference=booking_reference,
-            )    
-            return defaultResponse             
-        else:
-        # else booking with requestedMeal type
-            for item in items:
-                # Replace 'PK' and 'SK' with your actual primary key names
-                pk = item['airpointsNumber']
-                sk = item['bookingReference']  # Remove this if your table doesn't use sort keys
+            logger.info(f"No booking records found for booking reference number {booking_reference}")
+            response_obj = defaultResponse.copy()
+            response_obj["response"] = response_obj["response"].format(
+                search_value=booking_reference
+            )
 
-                # Update meal field for each item
-                update_response = table.update_item(
-                    Key={
-                        'airpointsNumber': pk,
-                        'bookingReference': sk  
-                    },
-                    UpdateExpression="SET mealSelected = :meal",
-                    ExpressionAttributeValues={
-                        ':meal': mealType
-                    },
-                    ReturnValues="ALL_NEW"  # This returns the updated item
-                )
+        for item in items:
+            pk = item.get('airpointsNumber')
+            sk = item.get('bookingReference')
 
-                updated_item = update_response.get('Attributes', {})
-                return updated_item
-                
-    except Exception as e:
-        logger.error(f"Error processing meal request: {e}")
-        return defaultResponse
-    
-    # TODO: you must return a response for Sonic indicating there is some sort of catastrophic failure and we cannot serve the user at this time.
+            update_response = table.update_item(
+                Key={
+                    'airpointsNumber': pk,
+                    'bookingReference': sk
+                },
+                UpdateExpression="SET mealSelected = :meal",
+                ExpressionAttributeValues={':meal': meal_type},
+                ReturnValues="ALL_NEW"
+            )
+
+            updated_item = update_response.get('Attributes', {})
+            return updated_item
+
     except (ProfileNotFound, NoCredentialsError) as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: AWS credential error: {str(e)}")
-        return defaultResponse
+        logger.error(f"AWS credential error: {str(e)}")
+        return systemError
+
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         error_message = e.response["Error"]["Message"]
+        logger.error(f"DynamoDB ClientError: {error_code} - {error_message}")
+
         if error_code == "ResourceNotFoundException":
-            table_name = get_dynamodb_table_name()
-            logger.error(f"retrieve_user_profile.search_booking_record: Table {table_name} not found: {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB table not found: {error_message}")
+            logger.error(f"DynamoDB table not found: {error_message}")
+            return systemError
         elif error_code == "ProvisionedThroughputExceededException":
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
-            raise ConnectionError(f"retrieve_user_profile.search_booking_record: DynamoDB throughput exceeded: {error_message}")
+            logger.error(f"DynamoDB throughput exceeded: {error_message}")
+            return systemError
         else:
-            logger.error(f"retrieve_user_profile.search_booking_record: DynamoDB ClientError: {error_code} - {error_message}")
-            raise RuntimeError(f"retrieve_user_profile.search_booking_record: DynamoDB error: {error_message}")
-    except ConnectionError as e:
-        logger.error(f"retrieve_user_profile.search_booking_record: Network error connecting to AWS: {str(e)}")
-        raise ConnectionError(f"Network error connecting to AWS: {str(e)}")
+            logger.error(f"DynamoDB error: {error_message}")
+            return systemError
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return systemError
 
 
-def main(airpoints_number: str):
+def main(booking_reference: str, meal_type: str):
     """
-    Main function to process Airpoints number lookup requests.
+    Main function to handle the booking update request.
 
     Args:
-        airpoints_number (str): The Airpoints number to look up
+        booking_reference (str): The booking reference number.
+        meal_type (str): The selected meal type.
 
     Returns:
-        dict or int: Lookup result if successful, or error description
+        dict or None: Result of the booking update operation.
     """
-    return None
+    logger.info(f"Received booking reference: {booking_reference} and meal type: {meal_type}")
+    result = submit_request(booking_reference, meal_type)
+    logger.info(f"Result: {json.dumps(result)}")
+    return result
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <airpoints_number>")
-        sys.exit(1)        
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <booking_reference> <meal_type>")
+        sys.exit(1)
 
-    airpoints_number = sys.argv[1]
-    sys.exit(main(airpoints_number))
+    booking_reference = sys.argv[1]
+    meal_type = sys.argv[2]
+    result = main(booking_reference, meal_type)
+
+    sys.exit(0 if result and result.get("status", "") != "error" else 1)

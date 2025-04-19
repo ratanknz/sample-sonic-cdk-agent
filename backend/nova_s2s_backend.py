@@ -43,6 +43,7 @@ from smithy_aws_core.credentials_resolvers.environment import (
 
 import knowledge_base_lookup
 import retrieve_user_profile
+import in_flight_services
 
 # Configure logging
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
@@ -53,8 +54,6 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore")
 # Suppress websockets server non-critical logs that are triggered by NLB health checks (empty TCP packets)
 logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
-
-
 
 class BedrockStreamManager:
     """Manages bidirectional streaming with AWS Bedrock using asyncio"""
@@ -420,7 +419,6 @@ class BedrockStreamManager:
                 results = knowledge_base_lookup.main(query)
                 logger.info(f"user query was about : {query} and results from bedrock KB was {json.dumps(results)}")
 
-
         elif tool == "userprofilesearch":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
                 content = json.loads(toolUseContent['content'])
@@ -434,8 +432,16 @@ class BedrockStreamManager:
 
                 logger.info(f"retrieved profile information {json.dumps(results)}")
 
+        elif tool == "request-for-meal":
+            if isinstance(toolUseContent, dict) and "content" in toolUseContent:
+                content = json.loads(toolUseContent['content'])
+                # Determine the type and call the appropriate method
+                if 'booking_reference' in content:
+                    results = in_flight_services.submit_request(content['booking_reference'], content['meal_type'])
+                    logger.info(f"Flight details after meal request {json.dumps(results)}")
+                else:
+                    logger.info("Inside Request for Meal: Error: No valid key found in content.")
         return results
-
 
 async def websocket_handler(websocket, url, headers=None):
     """Handle WebSocket connections from the frontend with authentication."""

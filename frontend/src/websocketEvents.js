@@ -359,6 +359,30 @@ export class WebSocketEventManager {
                   },
                 },
               },
+              {
+                toolSpec: {
+                  name: "request-for-meal",
+                  description:
+                    "Search for flight by booking reference and book special meal",
+                  inputSchema: {
+                    json: JSON.stringify({
+                      $schema: "http://json-schema.org/draft-07/schema#",
+                      type: "object",
+                      properties: {
+                        booking_reference: {
+                          type: "string",
+                          description: "the user's flight booking reference in format ZBCYG",
+                        },
+                        meal_type: {
+                          type: "string",
+                          description: "Type of special meal requested, e.g., vegetarian, vegan, halal, kosher"
+                        }
+                      },
+                      required: ["booking_reference", "meal_type"]
+                    }),
+                  },
+                },
+              }              
             ],
           },
         },
