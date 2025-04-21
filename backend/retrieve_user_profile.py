@@ -49,7 +49,8 @@ def search_booking_record(search_type, search_value):
     """
     table_name = get_dynamodb_table_name()
     index_name = f"{table_name}-index"
-    dynamodb = boto3.resource("dynamodb")
+    session = boto3.Session()
+    dynamodb = session.resource("dynamodb")
     table = dynamodb.Table(table_name)
 
     search_value = str(search_value).replace(" ", "").replace("-", "").replace(".", "")

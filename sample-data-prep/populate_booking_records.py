@@ -15,7 +15,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize DynamoDB client
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+session = boto3.Session()
+dynamodb = session.resource('dynamodb', region_name='us-east-1')
 source_table = dynamodb.Table('voiceBot-CustomerData')
 target_table = dynamodb.Table('voiceBot-BookingRecord')
 

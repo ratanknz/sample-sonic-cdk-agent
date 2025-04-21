@@ -74,7 +74,9 @@ def submit_request(booking_reference: str, meal_type: str):
     try:
         table_name = get_dynamodb_table_name()
         index_name = f"{table_name}-index"
-        dynamodb = boto3.resource("dynamodb")
+        
+        session = boto3.Session()
+        dynamodb = session.resource("dynamodb")
         table = dynamodb.Table(table_name)
 
         # Query using the bookingReference GSI
