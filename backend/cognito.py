@@ -131,7 +131,7 @@ def validate_token(token):
 
     if not USER_POOL_ID or not CLIENT_ID:
         logger.error("Missing USER_POOL_ID or CLIENT_ID environment variables")
-        return False, None
+        return False, None 
 
     try:
         # Get the header to determine the key ID (kid)

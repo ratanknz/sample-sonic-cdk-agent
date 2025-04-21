@@ -10,7 +10,7 @@ def create_table_if_not_exists(dynamodb_client, table_name):
     existing_tables = dynamodb_client.list_tables()['TableNames']
     if table_name in existing_tables:
         print(f"Table {table_name} already exists")
-        return
+        return 
     
     # Create table with airpointsNumber as partition key and bookingReference as sort key
     response = dynamodb_client.create_table(
