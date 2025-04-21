@@ -338,8 +338,7 @@ export class WebSocketEventManager {
               {
                 toolSpec: {
                   name: "userProfileSearch",
-                  description:
-                    "Search for a user's account and flight information by airpoints number or booking reference",
+                  description: "Retrieves a user's profile, including account and flight details, using either their Airpoints number or booking reference.",
                   inputSchema: {
                     json: JSON.stringify({
                       $schema: "http://json-schema.org/draft-07/schema#",
@@ -359,6 +358,29 @@ export class WebSocketEventManager {
                   },
                 },
               },
+              {
+                toolSpec: {
+                  name: "requestForSpecialMeal",
+                  description: "Use this tool when a user wants to request a special meal for their flight or request for a change in the meal already ordered. This includes meals like vegetarian, vegan, halal, kosher, or other dietary preferences. Make sure the user provides a valid booking reference.",
+                  inputSchema: {
+                    json: JSON.stringify({
+                      $schema: "http://json-schema.org/draft-07/schema#",
+                      type: "object",
+                      properties: {
+                        booking_reference: {
+                          type: "string",
+                          description: "The user's flight booking reference code (usually 5-6 uppercase letters, e.g., 'ZBCYG'). This is required to identify the user's flight reservation."
+                        },
+                        meal_type: {
+                          type: "string",
+                          description: "The specific type of special meal the user is requesting"
+                      },
+                      },
+                      required: ["booking_reference", "meal_type"]
+                    }),
+                  },
+                },
+              },            
             ],
           },
         },

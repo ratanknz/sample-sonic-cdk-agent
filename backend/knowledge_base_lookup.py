@@ -41,7 +41,8 @@ def get_knowledge_base_id():
 def main(query):
     knowledge_base_id = get_knowledge_base_id()
     try:
-        bedrock_agent = boto3.client("bedrock-agent-runtime")
+        session = boto3.Session()
+        bedrock_agent = session.client("bedrock-agent-runtime")
 
         # Retrieve from your KB using the query
         response = bedrock_agent.retrieve(
