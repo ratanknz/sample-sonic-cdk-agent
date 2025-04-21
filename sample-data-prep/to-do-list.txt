@@ -1,4 +1,0 @@
-implement additional tools to fetch booking information, manage booking, request for meal
-find airpoint details like status points, airpoint dollars, etc.
-
-- request to add meal, wheelchair, bassinet, etc.
