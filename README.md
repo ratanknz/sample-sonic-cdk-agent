@@ -1,6 +1,6 @@
-# Nova S2S Call Center Agent w/ Tools
+# Nova S2S Call Center Agent w/ Tools for Airline use case
 
-By Reilly Manton (rcmanton@amazon.com); Shuto Araki (shuaraki@amazon.com); Andrew Young (ajuny@amazon.com)
+Based upon the fork of the original code written by Reilly Manton (rcmanton@amazon.com); Shuto Araki (shuaraki@amazon.com); Andrew Young (ajuny@amazon.com)
 
 This template provides an AWS cloud-based solution for deploying applications that interact with the Nova S2S Sonic Model. It serves as a foundation for developing future speech-to-speech (S2S) tooling use cases. Unlike previous implementations that required locally hosted backend and frontend, this cloud architecture leverages:
 
