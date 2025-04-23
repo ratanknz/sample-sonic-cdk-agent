@@ -63,7 +63,11 @@ The versions below are tested and validated. Minor version differences would lik
 
 1. Update the environment variables to point to your Amazon Dynamodb table and your Bedrock Knowledge Base
 
-Copy `template.env` to a new file `.env` and update the `KNOWLEDGE_BASE_ID`, `DYNAMODB_TABLE_NAME` to your knowledge base ID and your table name. For table structure, the tool expects `airpoint_number` (String) as the primary key (assuming airline use case) and booking_reference (String) as Sort Key and you can add any other fields you want. (e.g., "departureDate", "departureAirport", "flightNumber"). Also, add a GSI to your dynamodb table with booking_reference as primary key and airpoints_number as sort key. IMPORTANT: User profile lookup expects GSI name to be tablename-index (so if you table name is bookingData, then index name must be bookingData-index)
+Copy `template.env` to a new file `.env` and update the `KNOWLEDGE_BASE_ID`, `DYNAMODB_TABLE_NAME` to your knowledge base ID and your table name. 
+
+Go to sample-data-prep folder and run import-customer-data.py code to create a dynamodb table and import sample data. Project expects a customer data table with `customerNumber` (String) as the primary key (assuming airline use case) and bookingReference (String) as Sort Key and you can add any other fields you want. (e.g., "departureDate", "departureAirport", "flightNumber"). Also, add a GSI to your dynamodb table with bookingReference as primary key and customerNumber as sort key. IMPORTANT: User profile lookup expects GSI name to be tablename-index (so if you table name is bookingData, then index name must be bookingData-index)
+
+After creating and importing the data in the table, put the name of the table into the .env file. Also, create a bedrock knowledge base and mention the name of the bedrock knowledge base in the .env file. 
 
 If you want to bring your own VPC rather than the solution deploying a new VPC for you, specify your VPC ID in `VPC_ID`.
 
@@ -231,6 +235,3 @@ VITE_COGNITO_DOMAIN=https://auth.example.com
 ```
 
 ## FAQ/trouble shooting
-1. Search by "Tool use detected" string to confirm if LLM recommended right tool with correct query parameters 
-2. "Tool Result Event" to make sure that output of tool call is correct. Make sure you disable it as it might produce large amount of log.
-3. if bot is not responding at all, force redployment of the ECS Service by going to Cluster --> Service (select service and then click update button)

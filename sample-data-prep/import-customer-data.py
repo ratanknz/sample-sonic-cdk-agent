@@ -12,15 +12,15 @@ def create_table_if_not_exists(dynamodb_client, table_name):
         print(f"Table {table_name} already exists")
         return 
     
-    # Create table with airpointsNumber as partition key and bookingReference as sort key
+    # Create table with customerNumber as partition key and bookingReference as sort key
     response = dynamodb_client.create_table(
         TableName=table_name,
         KeySchema=[
-            {'AttributeName': 'airpointsNumber', 'KeyType': 'HASH'},  # Partition key
+            {'AttributeName': 'customerNumber', 'KeyType': 'HASH'},  # Partition key
             {'AttributeName': 'bookingReference', 'KeyType': 'RANGE'}  # Sort key
         ],
         AttributeDefinitions=[
-            {'AttributeName': 'airpointsNumber', 'AttributeType': 'S'},
+            {'AttributeName': 'customerNumber', 'AttributeType': 'S'},
             {'AttributeName': 'bookingReference', 'AttributeType': 'S'}
         ],
         BillingMode='PAY_PER_REQUEST',
@@ -29,7 +29,7 @@ def create_table_if_not_exists(dynamodb_client, table_name):
                 'IndexName': f'{table_name}-index',
                 'KeySchema': [
                     {'AttributeName': 'bookingReference', 'KeyType': 'HASH'},  # Partition key for GSI
-                    {'AttributeName': 'airpointsNumber', 'KeyType': 'RANGE'}   # Sort key for GSI
+                    {'AttributeName': 'customerNumber', 'KeyType': 'RANGE'}   # Sort key for GSI
                 ],
                 'Projection': {
                     'ProjectionType': 'ALL'
@@ -70,8 +70,8 @@ def import_csv_to_dynamodb(csv_file_path, table_name, region='us-east-1'):
             # Convert numeric values to Decimal for DynamoDB compatibility
             for key, value in item.items():
                 if value is not None:
-                    # Ensure airpointsNumber is always a string
-                    if key == 'airpointsNumber':
+                    # Ensure customerNumber is always a string
+                    if key == 'customerNumber':
                         item[key] = str(value)
                     else:
                         try:
@@ -83,20 +83,20 @@ def import_csv_to_dynamodb(csv_file_path, table_name, region='us-east-1'):
                             pass
             
             # Ensure required keys exist
-            if 'airpointsNumber' not in item or 'bookingReference' not in item:
+            if 'customerNumber' not in item or 'bookingReference' not in item:
                 print(f"Skipping row, missing required keys: {item}")
                 continue
                 
             # Put item in DynamoDB
             try:
                 table.put_item(Item=item)
-                print(f"Added item: {item['airpointsNumber']} - {item['bookingReference']}")
+                print(f"Added item: {item['customerNumber']} - {item['bookingReference']}")
             except Exception as e:
                 print(f"Error adding item {item}: {str(e)}")
 
 def main():
     table_name = 'agentic_ai_demo_customer_data'
-    csv_file_path = 'results-updated-airpoints-ref.csv'
+    csv_file_path = 'results-updated-customer-ref.csv'
     
     # Check if CSV file exists
     if not os.path.exists(csv_file_path):

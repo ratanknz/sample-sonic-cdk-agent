@@ -89,7 +89,7 @@ class BedrockStreamManager:
         try:
             uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
             if uri:
-                logger.info("Fetching fresh AWS credentials for Bedrock client")
+                # logger.info("Fetching fresh AWS credentials for Bedrock client")
                 response = requests.get(f"http://169.254.170.2{uri}")
                 if response.status_code == 200:
                     creds = response.json()
@@ -293,9 +293,9 @@ class BedrockStreamManager:
                                     self.toolUseContent = event_data["toolUse"]
                                     self.toolName = event_data["toolUse"]["toolName"]
                                     self.toolUseId = event_data["toolUse"]["toolUseId"]
-                                    logger.info(
-                                        f"Tool use detected: {self.toolName}, ID: {self.toolUseId}, content: {self.toolUseContent}"
-                                    )
+                                    # logger.info(
+                                    #     f"Tool use detected: {self.toolName}, ID: {self.toolUseId}, content: {self.toolUseContent}"
+                                    # )
 
                                 # Process tool use when content ends
                                 elif (
@@ -342,7 +342,7 @@ class BedrockStreamManager:
 
                                     # check if tool use resulted in an error that needs to be reported to Sonic
                                     status = 'error' if toolResult.get('status') == 'error' else 'success'
-                                    logger.info(f"Tool result {toolResult} and value of status is {status}")
+                                    # logger.info(f"Tool result {toolResult} and value of status is {status}")
 
                                     # Send tool result event
                                     if isinstance(toolResult, dict):
@@ -360,9 +360,9 @@ class BedrockStreamManager:
                                             }
                                         }
                                     }
-                                    logger.info(
-                                        f"Tool Result Event: {json.dumps(tool_result_event)}"
-                                    )
+                                    # logger.info(
+                                    #     f"Tool Result Event: {json.dumps(tool_result_event)}"
+                                    # )
                                     await self.send_raw_event(
                                         json.dumps(tool_result_event)
                                     )
@@ -406,18 +406,18 @@ class BedrockStreamManager:
         """Return the tool result"""
         tool = toolName.lower()
         results = {}
-        logger.info(f"In process tool use: tool name is {toolName} and toolUseContent is set to {json.dumps(toolUseContent)}")
+        # logger.info(f"In process tool use: tool name is {toolName} and toolUseContent is set to {json.dumps(toolUseContent)}")
         if tool == "lookup":
             # Extract query from toolUseContent
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
                 # Parse the JSON string in the content field
                 query_json = json.loads(toolUseContent.get("content"))
                 query = query_json.get("query", "")
-                logger.info(f"Extracted KB lookup query")
+                # logger.info(f"Extracted KB lookup query")
 
                 # Call the knowledge base lookup
                 results = knowledge_base_lookup.main(query)
-                logger.info(f"user query was about : {query} and results from bedrock KB was {json.dumps(results)}")
+                # logger.info(f"user query was about : {query} and results from bedrock KB was {json.dumps(results)}")
 
         elif tool == "userprofilesearch":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
@@ -425,12 +425,12 @@ class BedrockStreamManager:
                 # Determine the type and call the appropriate method
                 if 'booking_reference' in content:
                     results = retrieve_user_profile.search_booking_record('booking', content['booking_reference'])
-                elif 'airpoints_number' in content:
-                    results = retrieve_user_profile.search_booking_record('airpoints', content['airpoints_number'])
+                elif 'customer_number' in content:
+                    results = retrieve_user_profile.search_booking_record('customer_number', content['customer_number'])
                 else:
-                    print("Error: No valid key found in content.")
+                    logger.info("Error: No valid key found in content.")
 
-                logger.info(f"retrieved profile information {json.dumps(results)}")
+                # logger.info(f"retrieved profile information {json.dumps(results)}")
 
         elif tool == "requestforspecialmeal":
             if isinstance(toolUseContent, dict) and "content" in toolUseContent:
@@ -438,7 +438,7 @@ class BedrockStreamManager:
                 # Determine the type and call the appropriate method
                 if 'booking_reference' in content:
                     results = in_flight_services.submit_request(content['booking_reference'], content['meal_type'])
-                    logger.info(f"Flight details after meal request {json.dumps(results)}")
+                    # logger.info(f"Flight details after meal request {json.dumps(results)}")
                 else:
                     logger.info("Inside Request for Meal: Error: No valid key found in content.")
         return results

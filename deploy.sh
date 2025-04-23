@@ -39,7 +39,6 @@ npm install
 # 2. Install frontend dependencies
 echo -e "${GREEN}Installing frontend dependencies and building the asset...${NC}"
 cp ./config/system_prompt.txt ./frontend/public
-cp ./config/airnz-logo.jpg ./frontend/public
 npm run build:frontend
 cp .env ./backend/
 

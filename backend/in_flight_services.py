@@ -32,7 +32,7 @@ load_dotenv()
 
 defaultResponse = {
     "status": "error",
-    "response": "Sorry we couldn't locate you in our records with booking reference {search_value}. Could you please check your details again?"
+    "response": "Sorry we couldn't locate you in our records with booking reference. Could you please check your details again?"
 }
 
 systemError = {
@@ -69,14 +69,14 @@ def submit_request(booking_reference: str, meal_type: str):
     meal_type = str(meal_type)
     booking_reference = str(booking_reference).replace(" ", "").replace("-", "").replace(".", "")
     
-    logger.info(f"Processing request - Booking Ref: {booking_reference}, Meal Type: {meal_type}")
+    # logger.info(f"Processing request - Booking Ref: {booking_reference}, Meal Type: {meal_type}")
 
     try:
         table_name = get_dynamodb_table_name()
         index_name = f"{table_name}-index"
         
-        session = boto3.Session()
-        dynamodb = session.resource("dynamodb")
+        # session = boto3.Session()
+        dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(table_name)
 
         # Query using the bookingReference GSI
@@ -88,28 +88,28 @@ def submit_request(booking_reference: str, meal_type: str):
         items = response.get('Items', [])
 
         if not items:
-            logger.info(f"No booking records found for booking reference number {booking_reference}")
-            response_obj = defaultResponse.copy()
-            response_obj["response"] = response_obj["response"].format(search_value=booking_reference)
-            return response_obj
+            # logger.info(f"No booking records found for booking reference number {booking_reference}")
+            # response_obj = defaultResponse.copy()
+            # response_obj["response"] = response_obj["response"].format(search_value=booking_reference)
+            # return response_obj
+            return defaultResponse
 
         for item in items:
             departure_date_str = item.get('departureDate')
             departure_time_str = item.get('departureTime')
 
             if not departure_date_str or not departure_time_str:
-                logger.warning(f"Departure date/time missing for booking {booking_reference}")
+                # logger.warning(f"Departure date/time missing for booking {booking_reference}")
                 return {
                     "status": "error",
                     "response": "Departure date/time not available for this booking."
                 }
-
             try:
                 combined_datetime_str = f"{departure_date_str} {departure_time_str}"
                 departure_time = datetime.strptime(combined_datetime_str, "%Y-%m-%d %H:%M")
                 departure_time = departure_time.replace(tzinfo=timezone.utc)
             except ValueError:
-                logger.error(f"Invalid departure date/time format: {combined_datetime_str}")
+                # logger.error(f"Invalid departure date/time format: {combined_datetime_str}")
                 return {
                     "status": "error",
                     "response": "Invalid departure time format. Please contact support."
@@ -117,18 +117,18 @@ def submit_request(booking_reference: str, meal_type: str):
 
             current_time = datetime.now(timezone.utc)
             if departure_time - current_time < timedelta(hours=24):
-                logger.info(f"Meal request rejected for {booking_reference}: Less than 24 hours to departure")
+                # logger.info(f"Meal request rejected for {booking_reference}: Less than 24 hours to departure")
                 return {
                     "status": "error",
-                    "response": "Meal requests must be made at least 24 hours before departure. Please contact support."
+                    "response": "Meal requests must be made at least 24 hours before departure."
                 }
 
-            pk = item.get('airpointsNumber')
+            pk = item.get('customerNumber')
             sk = item.get('bookingReference')
 
             update_response = table.update_item(
                 Key={
-                    'airpointsNumber': pk,
+                    'customerNumber': pk,
                     'bookingReference': sk
                 },
                 UpdateExpression="SET mealSelected = :meal",
@@ -161,13 +161,13 @@ def main(booking_reference: str, meal_type: str):
     Args:
         booking_reference (str): The booking reference number.
         meal_type (str): The selected meal type.
-
+ 
     Returns:
         dict or None: Result of the booking update operation.
     """
-    logger.info(f"Received booking reference: {booking_reference} and meal type: {meal_type}")
+    # logger.info(f"Received booking reference: {booking_reference} and meal type: {meal_type}")
     result = submit_request(booking_reference, meal_type)
-    logger.info(f"Result: {json.dumps(result)}")
+    # logger.info(f"Result: {json.dumps(result)}")
     return result
 
 

@@ -338,22 +338,22 @@ export class WebSocketEventManager {
               {
                 toolSpec: {
                   name: "userProfileSearch",
-                  description: "Retrieves a user's profile, including account and flight details, using either their Airpoints number or booking reference.",
+                  description: "Retrieves a user's profile, including account and flight details, using either their Customer number or booking reference.",
                   inputSchema: {
                     json: JSON.stringify({
                       $schema: "http://json-schema.org/draft-07/schema#",
                       type: "object",
                       properties: {
-                        airpoints_number: {
+                        customer_number: {
                           type: "string",
-                          description: "the user's airpoints number in format 18909212",
+                          description: "the customer id or number in format 18909212",
                         },
                         booking_reference: {
                           type: "string",
                           description: "the user's flight booking reference in format ZBCYG",
                         },
                       },
-                      required: ["airpoints_number"],
+                      required: ["customer_number"],
                     }),
                   },
                 },

@@ -509,8 +509,7 @@ function createHtmlStructure() {
     <div id="app">
       <div class="header">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="airnz-logo.jpg" alt="AirNZ Logo" style="height: 100px;" />
-            <h1>Ask Oscar</h1>
+            <h1>Airline AI Agent Demo</h1>
           </div>
 
           <div class="header-controls">
@@ -560,7 +559,7 @@ function createHtmlStructure() {
       </div>
       
       <div class="footer">
-        <div>AirNZ Oscar Voice Bot v1.0</div>
+        <div>Airline AI Agent Demo v1.0</div>
       </div>
     </div>
   `;

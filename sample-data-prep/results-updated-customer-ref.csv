@@ -1,12 +1,12 @@
-airpointsNumber,bookingReference,arrivalAirport,departureAirport,departureDate,departureTime,emailID,flightNumber,fullName,mealSelected,seatNumber
+customerNumber,bookingReference,arrivalAirport,departureAirport,departureDate,departureTime,emailID,flightNumber,fullName,mealSelected,seatNumber
 90329794,DUA4VV,BNE,WLG,2025-04-30,15:03,michael.c@example.com,NZ764,Michael Chen,Vegetarian,11A
 90329794,STA6NI,PER,ADL,2025-05-11,21:16,michael.c@example.com,NZ577,Michael Chen,Vegan,23C
 90329794,QBU6KJ,WLG,BNE,2025-04-25,18:03,michael.c@example.com,NZ101,Michael Chen,,12A
 90329794,GCI7NE,ADL,PER,2025-05-10,09:59,michael.c@example.com,NZ202,Michael Chen,Vegan,15C
-38841085,VDZ3JS,SYD,MEL,2025-04-25,11:29,ratan@example.com,NZ101,Ratan Kumar,vegetarian,12A
-38841085,WJW3SH,MEL,BNE,2025-05-14,17:32,ratan@example.com,NZ334,Ratan Kumar,,17A
-38841085,BLA5JN,BNE,MEL,2025-05-10,07:47,ratan@example.com,NZ202,Ratan Kumar,,15C
-38841085,VES1SK,MEL,SYD,2025-04-27,05:23,ratan@example.com,NZ241,Ratan Kumar,,18C
+38841085,VDZ3JS,SYD,MEL,2025-04-25,11:29,Ryan@example.com,NZ101,Ryan Kumar,vegetarian,12A
+38841085,WJW3SH,MEL,BNE,2025-05-14,17:32,Ryan@example.com,NZ334,Ryan Kumar,,17A
+38841085,BLA5JN,BNE,MEL,2025-05-10,07:47,Ryan@example.com,NZ202,Ryan Kumar,,15C
+38841085,VES1SK,MEL,SYD,2025-04-27,05:23,Ryan@example.com,NZ241,Ryan Kumar,,18C
 25852563,BLZ3DX,PER,BNE,2025-04-29,14:58,david.lee@example.com,NZ422,David Lee,vegetarian,28C
 25852563,RBA4XR,BNE,MEL,2025-05-10,20:44,david.lee@example.com,NZ202,David Lee,vegetarian,15C
 25852563,ELP3RF,BNE,PER,2025-04-20,11:41,david.lee@example.com,NZ101,David Lee,,12A
@@ -23,7 +23,7 @@ airpointsNumber,bookingReference,arrivalAirport,departureAirport,departureDate,d
 46405941,CMX4RE,WLG,ADL,2025-05-10,22:55,john.smith@example.com,NZ202,John Smith,Vegetarian,15C
 46405941,RMB7QD,AKL,ADL,2025-04-27,14:54,john.smith@example.com,NZ101,John Smith,Vegetarian,12A
 46405941,GEJ5OX,CHC,BNE,2025-05-15,08:35,john.smith@example.com,NZ806,John Smith,Vegetarian,26C
-57463301,UPS3BY,WLG,BNE,2025-04-28,09:31,mike@example.com,NZ470,Mike Parsons,,21B
-57463301,AOJ2RH,BNE,WLG,2025-04-25,09:10,mike@example.com,NZ101,Mike Parsons,,12A
-57463301,KBV5SP,CHC,MEL,2025-05-10,09:33,mike@example.com,NZ202,Mike Parsons,,15C
-57463301,DIG6EZ,MEL,CHC,2025-05-11,10:40,mike@example.com,NZ152,Mike Parsons,,28B
+57463301,UPS3BY,WLG,BNE,2025-04-28,09:31,mike@example.com,NZ470,Mike L,,21B
+57463301,AOJ2RH,BNE,WLG,2025-04-25,09:10,mike@example.com,NZ101,Mike L,,12A
+57463301,KBV5SP,CHC,MEL,2025-05-10,09:33,mike@example.com,NZ202,Mike L,,15C
+57463301,DIG6EZ,MEL,CHC,2025-05-11,10:40,mike@example.com,NZ152,Mike L,,28B
